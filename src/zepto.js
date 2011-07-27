@@ -97,7 +97,7 @@ var Zepto = (function() {
     })
     return target;
   }
-  $.qsa = $$ = function(element, selector){ return slice.call(element.querySelectorAll(selector)) }
+  $.qsa = $$ = function(element, selector){ try { return slice.call(element.querySelectorAll(selector)) } catch(err) { return null; } }
 
   function filtered(nodes, selector){
     return selector === undefined ? $(nodes) : $(nodes).filter(selector);

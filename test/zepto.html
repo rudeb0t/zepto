@@ -188,6 +188,11 @@
     <div class="index1"></div>
   </div>
 
+  <div id="trigger_handler">
+    <form method="get">
+    </form>
+  </div>
+
   <script>
 
     function click(el){
@@ -364,6 +369,9 @@
         t.assertEqual(Node.TEXT_NODE, fragment.get(1).nodeType);
         t.assertEqual("<span>world</span>", outerHTML(fragment.get(2)));
         t.assertEqual('', fragment.selector);
+
+        fragment = $("<div>hello</div> ");
+        t.assertLength(1, fragment);
       },
 
       testDollarWithTextNode: function(t){
@@ -453,6 +461,34 @@
           return key + '=' + value;
         })
         t.assertEqual('name=banana,taste=sweet', results.sort().join(','));
+      },
+
+      testDollarEach: function(t){
+        var array = ['a','b','c'], object = { a: 1, b: 2, c: 3 }, result;
+
+        result = [];
+        $.each(array, function(idx, val){
+          result.push(idx);
+          result.push(val);
+        });
+        t.assertEqual('0a1b2c', result.join(''));
+
+        result = [];
+        $.each(object, function(key, val){
+          result.push(key);
+          result.push(val);
+        });
+        t.assertEqual('a1b2c3', result.join(''));
+
+        result = [];
+        $.each(array, function(idx, val){
+          result.push(idx);
+          result.push(val);
+          return idx<1;
+        });
+        t.assertEqual('0a1b', result.join(''));
+
+        t.assertEqual('abc', $.each(array, function(){}).join(''));
       },
 
       testEq: function(t){
@@ -727,6 +763,9 @@
         t.assertLength(2, found.filter('.filtertest'));
         t.assertLength(0, found.filter('.doesnotexist'));
         t.assertLength(1, found.filter('.filtertest').filter(':nth-child(2n)'));
+
+        var withoutParent = $(document.createElement('div'));
+        t.assert(!withoutParent.is('div'));
       },
 
       testAdd: function(t){
@@ -763,6 +802,8 @@
 
         t.assert($('div').is('#some_element'));
         t.assert(!$('#doesnotexist').is('p'));
+
+        t.assert(!$(window).is('p'));
       },
 
       testCSS: function(t){
@@ -917,6 +958,9 @@
         var e3 = $.Event('custom', {customKey: 'customValue'});
         t.assertEqual('custom', e3.type);
         t.assertEqual('customValue', e3.customKey);
+
+        var e4 = $.Event('custom', {bubbles: false});
+        t.assertIdentical(false, e4.bubbles);
       },
 
       testTriggerEventObject: function(t){
@@ -935,6 +979,33 @@
 
         t.assertEqual(10, counter);
         t.assertEqual(20, customEventKey);
+      },
+
+      testTriggerHandler: function(t){
+        t.assertUndefined($('doesnotexist').triggerHandler('submit'));
+
+        var form = $('#trigger_handler form').get(0);
+        $('#trigger_handler').bind('submit', function(e) {
+          t.fail("triggerHandler shouldn't bubble");
+        });
+
+        var executed = [];
+        $(form).bind('submit', function(e) {
+          executed.push("1");
+          t.assertEqual(form, e.target);
+          return 1;
+        });
+        $(form).bind('submit', function(e) {
+          executed.push("2");
+          t.assertEqual(form, e.target);
+          e.stopImmediatePropagation();
+          return 2;
+        });
+        $(form).bind('submit', function(e) {
+          t.fail("triggerHandler shouldn't continue after stopImmediatePropagation");
+        });
+        t.assertIdentical(2, $(form).triggerHandler('submit'));
+        t.assertEqual('1 2', executed.join(' '));
       },
 
       testEmpty: function(t) {
@@ -1150,6 +1221,23 @@
         click(someElement);
         t.assertEqual(someElement, target);
         t.assertEqualCollection($(document.body), context);
+      },
+
+      testDOMEventWrappers: function(t){
+        var events = ('blur focus focusin focusout load resize scroll unload click dblclick '+
+          'mousedown mouseup mousemove mouseover mouseout '+
+          'change select keydown keypress keyup error').split(' ');
+
+        var el = $('#another_element'), count = 0;
+
+        events.forEach(function(event){
+          t.assertTrue($.isFunction(el[event]), 'event type: ' + event);
+        });
+
+        el.click(function(){ count++ });
+        click(el.get(0));
+
+        t.assertEqual(1, count);
       },
 
       testAttr: function(t){
@@ -1583,6 +1671,30 @@
         var $endTest2 = $('#end_test').find('div').find('span').end().end();
         t.assertEqual($endTest.length, $endTest2.length);
         t.assertEqual($endTest.get(0), $endTest2.get(0));
+      },
+
+      testCustomEvents: function (t) {
+        var $body = $(document.body);
+
+        $body.bind('custom', function(evt, a, b) {
+          t.assertEqual(a, 1);
+          t.assertEqual(b, 2);
+          $body.unbind();
+        })
+        $body.trigger('custom', [1, 2]);
+
+        $body.bind('custom', function(evt, a) {
+          t.assertEqual(a, 1);
+          $body.unbind();
+        })
+        $body.trigger('custom', 1);
+
+        var eventData = {z: 1};
+        $body.bind('custom', function(evt, a) {
+          t.assertEqual(a, eventData);
+          $body.unbind();
+        })
+        $body.trigger('custom', eventData);
       }
     });
   </script>

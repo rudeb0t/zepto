@@ -84,7 +84,7 @@ var Zepto = (function() {
       else if (elementTypes.indexOf(selector.nodeType) >= 0 || selector === window)
         dom = [selector], selector = null;
       else if (fragmentRE.test(selector))
-        dom = fragment(selector, RegExp.$1), selector = null;
+        dom = fragment(selector.trim(), RegExp.$1), selector = null;
       else if (selector.nodeType && selector.nodeType == 3) dom = [selector];
       else dom = $$(document, selector);
       return Z(dom, selector);
@@ -126,6 +126,19 @@ var Zepto = (function() {
     return flatten(values);
   }
 
+  $.each = function(elements, callback) {
+    var i, key;
+    if (likeArray(elements))
+      for(i = 0; i < elements.length; i++) {
+        if(callback(i, elements[i]) === false) return elements;
+      }
+    else
+      for(key in elements) {
+        if(callback(key, elements[key]) === false) return elements;
+      }
+    return elements;
+  }
+
   $.fn = {
     forEach: emptyArray.forEach,
     reduce: emptyArray.reduce,
@@ -158,7 +171,7 @@ var Zepto = (function() {
     },
     filter: function(selector){
       return $([].filter.call(this, function(element){
-        return $$(element.parentNode, selector).indexOf(element) >= 0;
+        return element.parentNode && $$(element.parentNode, selector).indexOf(element) >= 0;
       }));
     },
     end: function(){

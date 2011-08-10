@@ -26,12 +26,13 @@
   //     ]
   //
   $.fn.serializeArray = function () {
-    var result = [];
+    var result = [], el;
     $( Array.prototype.slice.call(this.get(0).elements) ).each(function () {
-      if ( $(this).attr('type') !== 'radio' || $(this).is(':checked') ) {
+      el = $(this);
+      if ( (el.attr('type') !== 'radio' || el.is(':checked')) && !(el.attr('type') === 'checkbox' && !el.is(':checked'))) {
         result.push({
-          name: $(this).attr('name'),
-          value: $(this).val()
+          name: el.attr('name'),
+          value: el.val()
         });
       }
     });
@@ -61,33 +62,29 @@
 
   // ### $.fn.submit
   //
-  // Trigger submit event for form or bind submit event
+  // Bind or trigger the submit event for a form
   //
   // *Examples:*
   //
-  // To trigger submit event:
-  //
-  //     $('#login_form').submit();
-  //
-  // To bind submit event:
+  // To bind a handler for the submit event:
   //
   //     $('#login_form').submit(function (e) {
   //         alert('Form was submitted!');
   //         e.preventDefault();
   //     });
   //
-  $.fn.submit = function (fn) {
-    var isBind = typeof fn === 'function';
-    return this.each(function () {
-      if (isBind) {
-        this.submit = fn;
-      } else {
-        try {
-          this.submit();
-          return;
-        } catch(e) {};
-      }
-    });
+  // To trigger form submit:
+  //
+  //     $('#login_form').submit();
+  //
+  $.fn.submit = function (callback) {
+    if (callback) this.bind('submit', callback)
+    else if (this.length) {
+      var event = $.Event('submit');
+      this.eq(0).trigger(event);
+      if (!event.defaultPrevented) this.get(0).submit()
+    }
+    return this;
   }
 
 })(Zepto);
